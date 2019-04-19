@@ -13,4 +13,5 @@ serde = { version = "1.0.88", features = ["derive"] }
 tokio = "0.1.15"
 tokio-tcp = "0.1"
 tokio-udp = "0.1"
+trust-dns = "0.16"
 trust-dns-server = "0.16"
