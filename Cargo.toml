@@ -1,0 +1,16 @@
+[package]
+name = "peach-dyndns-host"
+version = "0.1.0"
+authors = ["Michael Williams <michael.williams@enspiral.com>"]
+edition = "2018"
+
+[dependencies]
+env_logger = "0.6"
+futures = "0.1.26"
+lazy_static = "1.0"
+log = "0.4.1"
+serde = { version = "1.0.88", features = ["derive"] }
+tokio = "0.1.15"
+tokio-tcp = "0.1"
+tokio-udp = "0.1"
+trust-dns-server = "0.16"
