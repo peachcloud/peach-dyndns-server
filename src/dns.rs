@@ -15,7 +15,7 @@ use trust_dns_server::store::in_memory::InMemoryAuthority;
 
 static DEFAULT_TCP_REQUEST_TIMEOUT: u64 = 5;
 
-pub fn dns() -> Box<Future<Item = (), Error = ()> + Send> {
+pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
     info!("Trust-DNS {} starting", trust_dns_server::version());
 
     let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));

@@ -10,8 +10,7 @@ use tokio_executor;
 use trust_dns_server::logger;
 
 mod dns;
-
-use dns::dns;
+mod http;
 
 fn main() {
     logger::debug();
@@ -20,7 +19,8 @@ fn main() {
 
     let main_future: Box<Future<Item = (), Error = ()> + Send> =
         Box::new(future::lazy(move || {
-            tokio_executor::spawn(dns());
+            tokio_executor::spawn(dns::server());
+            tokio_executor::spawn(http::server());
 
             future::empty()
         }));
