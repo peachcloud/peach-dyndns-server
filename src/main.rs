@@ -5,27 +5,27 @@ extern crate tokio;
 extern crate tokio_tcp;
 extern crate trust_dns_server;
 
-use std::io;
 use std::collections::BTreeMap;
+use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::{Duration};
+use std::time::Duration;
 
 use futures::{future, Future};
+use nest::{Error, Store, Value};
 use tokio::runtime::Runtime;
 use tokio::runtime::TaskExecutor;
 use tokio_tcp::TcpListener;
 use tokio_udp::UdpSocket;
-
-use trust_dns::rr::{LowerName, Name, Record, RecordSet, RecordType, RData, RrKey};
 use trust_dns::rr::rdata::soa::SOA;
+use trust_dns::rr::{LowerName, Name, RData, Record, RecordSet, RecordType, RrKey};
 use trust_dns_server::authority::{AuthorityObject, Catalog, ZoneType};
 use trust_dns_server::config::{Config, ZoneConfig};
 use trust_dns_server::logger;
 use trust_dns_server::server::ServerFuture;
-use trust_dns_server::store::in_memory::{InMemoryAuthority};
+use trust_dns_server::store::in_memory::InMemoryAuthority;
 use trust_dns_server::store::StoreConfig;
 
 static DEFAULT_TCP_REQUEST_TIMEOUT: u64 = 5;
@@ -43,8 +43,10 @@ fn main() {
     let tcp_request_timeout = Duration::from_secs(DEFAULT_TCP_REQUEST_TIMEOUT);
 
     let sock_addr = SocketAddr::new(ip_addr, listen_port);
-    let udp_socket = UdpSocket::bind(&sock_addr).unwrap_or_else(|_| panic!("could not bind to udp: {}", sock_addr));
-    let tcp_listener = TcpListener::bind(&sock_addr).unwrap_or_else(|_| panic!("could not bind to tcp: {}", sock_addr));
+    let udp_socket = UdpSocket::bind(&sock_addr)
+        .unwrap_or_else(|_| panic!("could not bind to udp: {}", sock_addr));
+    let tcp_listener = TcpListener::bind(&sock_addr)
+        .unwrap_or_else(|_| panic!("could not bind to tcp: {}", sock_addr));
 
     let mut catalog: Catalog = Catalog::new();
 
@@ -53,29 +55,33 @@ fn main() {
     let authority_zone_type = ZoneType::Master;
     let authority_allow_axfr = false;
 
-    let serial = 2;
+    let serial = 1;
     let soa_name = Name::from_str("dyn.peach.cloud.").unwrap();
     let soa_ttl = 60;
     let soa_rdata = RData::SOA(SOA::new(
-        Name::from_str("dyn.peach.cloud.").unwrap(), // mname
+        Name::from_str("dyn.peach.cloud.").unwrap(),      // mname
         Name::from_str("root.dyn.peach.cloud.").unwrap(), // rname
-        serial, // serial
-        604800, // refresh
-        86400, // retry
-        2419200, // expire
-        86400 // negtive cache ttl
+        serial,                                           // serial
+        604800,                                           // refresh
+        86400,                                            // retry
+        2419200,                                          // expire
+        86400,                                            // negtive cache ttl
     ));
     let mut soa_record_set = RecordSet::new(&soa_name, RecordType::SOA, serial);
     soa_record_set.add_rdata(soa_rdata);
-    let soa_rr_key = RrKey::new(LowerName::new(&authority_name), soa_record_set.record_type());
+    let soa_rr_key = RrKey::new(
+        LowerName::new(&authority_name),
+        soa_record_set.record_type(),
+    );
     authority_records.insert(soa_rr_key, soa_record_set);
 
     let mut authority = InMemoryAuthority::new(
         authority_name.clone(),
         authority_records,
         authority_zone_type,
-        authority_allow_axfr
-    ).unwrap();
+        authority_allow_axfr,
+    )
+    .unwrap();
 
     /*
     let ns_name = Name::from_str("dyn.peach.cloud.").unwrap();
@@ -124,5 +130,3 @@ fn main() {
     // we're exiting for some reason...
     info!("Trust-DNS {} stopping", trust_dns_server::version());
 }
-
-
