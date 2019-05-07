@@ -5,11 +5,8 @@ authors = ["Michael Williams <michael.williams@enspiral.com>"]
 edition = "2018"
 
 [dependencies]
-env_logger = "0.6"
 futures = "0.1.26"
-lazy_static = "1.0"
 log = "0.4.1"
-serde = { version = "1.0.88", features = ["derive"] }
 tokio = "0.1"
 tokio-executor = "0.1"
 tokio-tcp = "0.1"
