@@ -82,17 +82,16 @@ pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
 
     Box::new(future::lazy(move || {
         // load all the listeners
-        info!("listening for UDP on {:?}", udp_socket);
+        info!("DNS server listening for UDP on {:?}", udp_socket);
         server.register_socket(udp_socket);
 
-        info!("listening for TCP on {:?}", tcp_listener);
+        info!("DNS server listening for TCP on {:?}", tcp_listener);
         server
             .register_listener(tcp_listener, tcp_request_timeout)
-            .expect("could not register TCP listener");
+            .expect("DNS server could not register TCP listener");
 
-        info!("awaiting connections...");
+        info!("awaiting DNS connections...");
 
-        info!("Server starting up");
         future::empty()
     }))
 }

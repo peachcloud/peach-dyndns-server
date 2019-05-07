@@ -7,13 +7,13 @@ use futures::{future, Future};
 use nest::{Error, Store, Value};
 use tokio::runtime::Runtime;
 use tokio_executor;
-use trust_dns_server::logger;
 
+mod cli;
 mod dns;
 mod http;
 
-fn main() {
-    logger::debug();
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = cli::args()?;
 
     let mut runtime = Runtime::new().expect("error when creating tokio Runtime");
 
@@ -36,4 +36,6 @@ fn main() {
 
     // we're exiting for some reason...
     info!("stopping!?");
+
+    Ok(())
 }

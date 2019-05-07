@@ -9,11 +9,17 @@ _work in progress_
 ```shell
 git clone git@github.com:peachcloud/peach-dyndns-host
 cd peach-dyndns-host
-cargo run
+cargo run -- -vvv # DEBUG log verbosity
 ```
 
 in another terminal
 
 ```shell
 dig @localhost -p 12323 test.dyn.peach.cloud
+```
+
+or
+
+```shell
+curl http://localhost:3000
 ```
