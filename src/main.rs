@@ -2,40 +2,30 @@
 extern crate log;
 
 use std::io;
-
-use futures::{future, Future};
+use futures::{try_join, future, Future};
 use nest::{Error, Store, Value};
-use tokio::runtime::Runtime;
-use tokio_executor;
+use tokio::task;
 
 mod cli;
 mod dns;
 mod http;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = cli::args()?;
+#[tokio::main]
+async fn main() {
+    let args = cli::args().expect("error parsing args");
 
-    let mut runtime = Runtime::new().expect("error when creating tokio Runtime");
+    let dns_future = task::spawn(dns::server());
+    let http_future = task::spawn(http::server());
 
-    let main_future: Box<Future<Item = (), Error = ()> + Send> =
-        Box::new(future::lazy(move || {
-            tokio_executor::spawn(dns::server());
-            tokio_executor::spawn(http::server());
+    let result = try_join!(dns_future, http_future);
 
-            future::empty()
-        }));
+    if let Err(e) = result {
+            io::Error::new(
+                io::ErrorKind::Interrupted,
+                "Server stopping due to interruption",
+            );
+            error!("server failure: {}", e);
+        }
 
-    if let Err(e) = runtime.block_on(main_future.map_err(|_| {
-        io::Error::new(
-            io::ErrorKind::Interrupted,
-            "Server stopping due to interruption",
-        )
-    })) {
-        error!("server failure: {}", e);
-    }
-
-    // we're exiting for some reason...
-    info!("stopping!?");
-
-    Ok(())
+    println!("were stopping for some reason");
 }
