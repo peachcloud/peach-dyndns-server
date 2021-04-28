@@ -9,7 +9,7 @@ clap-log-flag = "0.2"
 clap-verbosity-flag = "0.2"
 log = "0.4"
 futures = "0.3.1"
-hyper = "0.12"
+hyper = { version = "0.14", features = ["full"] }
 nest = "1"
 structopt = "0.2"
 tokio = { version = "1.5.0", features = ["full"] }
