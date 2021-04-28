@@ -2,20 +2,26 @@ use std::collections::BTreeMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use std::time::Duration;
-
+use std::sync::{Arc, RwLock};
 use futures::{future, Future};
-use tokio_tcp::TcpListener;
-use tokio_udp::UdpSocket;
-use trust_dns::rr::rdata::soa::SOA;
-use trust_dns::rr::{LowerName, Name, RData, Record, RecordSet, RecordType, RrKey};
+use futures::future::join_all;
+use tokio::net::TcpListener;
+use tokio::net::UdpSocket;
+use trust_dns_client::rr::rdata::soa::SOA;
+use trust_dns_client::rr::{LowerName, Name, RData, Record, RecordSet, RecordType, RrKey};
 use trust_dns_server;
 use trust_dns_server::authority::{Catalog, ZoneType};
 use trust_dns_server::server::ServerFuture;
 use trust_dns_server::store::in_memory::InMemoryAuthority;
 
+
+
+
+
 static DEFAULT_TCP_REQUEST_TIMEOUT: u64 = 5;
 
-pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
+
+pub async fn server() -> ServerFuture<Catalog> {
     info!("Trust-DNS {} starting", trust_dns_server::version());
 
     let ip_addr = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
@@ -23,10 +29,8 @@ pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
     let tcp_request_timeout = Duration::from_secs(DEFAULT_TCP_REQUEST_TIMEOUT);
 
     let sock_addr = SocketAddr::new(ip_addr, listen_port);
-    let udp_socket = UdpSocket::bind(&sock_addr)
-        .unwrap_or_else(|_| panic!("could not bind to udp: {}", sock_addr));
-    let tcp_listener = TcpListener::bind(&sock_addr)
-        .unwrap_or_else(|_| panic!("could not bind to tcp: {}", sock_addr));
+    let udp_socket = UdpSocket::bind(&sock_addr).await.expect("could not bind udp socket");
+    let tcp_listener = TcpListener::bind(&sock_addr).await.expect("could not bind tcp listener");
 
     let mut catalog: Catalog = Catalog::new();
 
@@ -76,22 +80,18 @@ pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
     let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
     authority.upsert(dyn_record, authority.serial());
 
-    catalog.upsert(LowerName::new(&authority_name), Box::new(authority));
+    catalog.upsert(LowerName::new(&authority_name), Box::new(Arc::new(RwLock::new(authority))));
 
-    let server = ServerFuture::new(catalog);
+    let mut server = ServerFuture::new(catalog);
 
-    Box::new(future::lazy(move || {
-        // load all the listeners
-        info!("DNS server listening for UDP on {:?}", udp_socket);
-        server.register_socket(udp_socket);
+    // load all the listeners
+    info!("DNS server listening for UDP on {:?}", udp_socket);
+    let udp_future = server.register_socket(udp_socket);
 
-        info!("DNS server listening for TCP on {:?}", tcp_listener);
-        server
-            .register_listener(tcp_listener, tcp_request_timeout)
-            .expect("DNS server could not register TCP listener");
+    info!("DNS server listening for TCP on {:?}", tcp_listener);
+    let tcp_future = server
+        .register_listener(tcp_listener, tcp_request_timeout);
+    info!("awaiting DNS connections...");
 
-        info!("awaiting DNS connections...");
-
-        future::empty()
-    }))
+    server
 }

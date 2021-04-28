@@ -1,21 +1,22 @@
 use futures::Future;
-use hyper::service::service_fn_ok;
 use hyper::{Body, Request, Response, Server};
+use std::convert::Infallible;
+use hyper::service::{make_service_fn, service_fn};
 
-fn handle_request(_req: Request<Body>) -> Response<Body> {
-    Response::new(Body::from("Hello, World!"))
+
+async fn handle_request(_req: Request<Body>) -> Result<Response<Body>, Infallible>{
+    Ok(Response::new(Body::from("Hello, World!")))
 }
 
-pub fn server() -> Box<Future<Item = (), Error = ()> + Send> {
+pub async fn server() {
     let address = ([127, 0, 0, 1], 3000).into();
 
-    let handle_connection = || service_fn_ok(handle_request);
+    let make_svc = make_service_fn(|_conn| async {
+        // service_fn converts our function into a `Service`
+        Ok::<_, Infallible>(service_fn(handle_request))
+    });
 
     info!("HTTP server listening for TCP on {:?}", address);
 
-    let server = Server::bind(&address)
-        .serve(handle_connection)
-        .map_err(|e| error!("HTTP server error: {}", e));
-
-    Box::new(server)
+    Server::bind(&address).serve(make_svc).await;
 }
