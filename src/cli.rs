@@ -1,5 +1,3 @@
-use clap_log_flag;
-use clap_verbosity_flag;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
