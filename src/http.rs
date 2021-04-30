@@ -1,22 +1,50 @@
-use futures::Future;
-use hyper::{Body, Request, Response, Server};
-use std::convert::Infallible;
-use hyper::service::{make_service_fn, service_fn};
+/*
+*
+* /register-user (sends an email verification to create a new account)
+* /verify (for clicking the link in the email)
+* /register-domain (add a new domain and get back the secret for subsequent updating)
+* /update-domain (update the IP for the domain, passing the associated secret)
+*
+*/
+use rocket_contrib::json::Json;
+use serde::Deserialize;
 
+#[get("/")]
+fn index() -> &'static str {
+    "This is the peach-dyn-dns server."
+}
 
-async fn handle_request(_req: Request<Body>) -> Result<Response<Body>, Infallible>{
-    Ok(Response::new(Body::from("Hello, World!")))
+#[derive(Deserialize, Debug)]
+struct RegisterDomainPost {
+    domain: String,
+}
+
+#[post("/register-domain", data = "<data>")]
+fn register_domain(data: Json<RegisterDomainPost>) -> &'static str {
+    info!("++ post request to register new domain: {:?}", data);
+    "New domain registered" // TODO: return secret
+}
+
+#[derive(Deserialize, Debug)]
+struct UpdateDomainPost {
+    domain: String,
+    secret: String,
+}
+
+#[post("/update-domain", data = "<data>")]
+fn update_domain(data: Json<UpdateDomainPost>) -> &'static str {
+    info!("++ post request to update domain: {:?}", data);
+    "Updating domain" // TODO: validate, then do it
 }
 
 pub async fn server() {
-    let address = ([127, 0, 0, 1], 3000).into();
 
-    let make_svc = make_service_fn(|_conn| async {
-        // service_fn converts our function into a `Service`
-        Ok::<_, Infallible>(service_fn(handle_request))
-    });
+    let rocket_result= rocket::build()
+        .mount("/", routes![index, register_domain, update_domain])
+        .launch()
+        .await;
 
-    info!("HTTP server listening for TCP on {:?}", address);
-
-    Server::bind(&address).serve(make_svc).await;
+    if let Err(err) = rocket_result {
+        error!("++ error launching rocket server: {:?}", err);
+    }
 }

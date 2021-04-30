@@ -1,9 +1,10 @@
-#[macro_use]
-extern crate log;
+#![feature(proc_macro_hygiene, decl_macro)]
 
+#[macro_use]
+extern crate rocket;
+
+use futures::try_join;
 use std::io;
-use futures::{try_join, future, Future};
-use nest::{Error, Store, Value};
 use tokio::task;
 
 mod cli;
@@ -12,8 +13,7 @@ mod http;
 
 #[tokio::main]
 async fn main() {
-
-    let args = cli::args().expect("error parsing args");
+    let _args = cli::args().expect("error parsing args");
 
     // create future for dns and http servers
     let dns_future = task::spawn(dns::server());
@@ -30,7 +30,7 @@ async fn main() {
             );
             error!("server failure: {}", e);
         }
-        Ok(val) => {
+        Ok(_val) => {
             info!("we're stopping for some unexpected reason");
         }
     }

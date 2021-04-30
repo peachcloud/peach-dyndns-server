@@ -1,25 +1,17 @@
 use std::collections::BTreeMap;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
-use std::time::Duration;
 use std::sync::{Arc, RwLock};
-use futures::{future, Future};
-use futures::future::join_all;
+use std::time::Duration;
 use tokio::net::TcpListener;
 use tokio::net::UdpSocket;
 use trust_dns_client::rr::rdata::soa::SOA;
 use trust_dns_client::rr::{LowerName, Name, RData, Record, RecordSet, RecordType, RrKey};
-use trust_dns_server;
 use trust_dns_server::authority::{Catalog, ZoneType};
 use trust_dns_server::server::ServerFuture;
 use trust_dns_server::store::in_memory::InMemoryAuthority;
 
-
-
-
-
 static DEFAULT_TCP_REQUEST_TIMEOUT: u64 = 5;
-
 
 pub async fn server() -> ServerFuture<Catalog> {
     info!("Trust-DNS {} starting", trust_dns_server::version());
@@ -29,8 +21,12 @@ pub async fn server() -> ServerFuture<Catalog> {
     let tcp_request_timeout = Duration::from_secs(DEFAULT_TCP_REQUEST_TIMEOUT);
 
     let sock_addr = SocketAddr::new(ip_addr, listen_port);
-    let udp_socket = UdpSocket::bind(&sock_addr).await.expect("could not bind udp socket");
-    let tcp_listener = TcpListener::bind(&sock_addr).await.expect("could not bind tcp listener");
+    let udp_socket = UdpSocket::bind(&sock_addr)
+        .await
+        .expect("could not bind udp socket");
+    let tcp_listener = TcpListener::bind(&sock_addr)
+        .await
+        .expect("could not bind tcp listener");
 
     let mut catalog: Catalog = Catalog::new();
 
@@ -80,17 +76,19 @@ pub async fn server() -> ServerFuture<Catalog> {
     let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
     authority.upsert(dyn_record, authority.serial());
 
-    catalog.upsert(LowerName::new(&authority_name), Box::new(Arc::new(RwLock::new(authority))));
+    catalog.upsert(
+        LowerName::new(&authority_name),
+        Box::new(Arc::new(RwLock::new(authority))),
+    );
 
     let mut server = ServerFuture::new(catalog);
 
     // load all the listeners
     info!("DNS server listening for UDP on {:?}", udp_socket);
-    let udp_future = server.register_socket(udp_socket);
+    server.register_socket(udp_socket);
 
     info!("DNS server listening for TCP on {:?}", tcp_listener);
-    let tcp_future = server
-        .register_listener(tcp_listener, tcp_request_timeout);
+    server.register_listener(tcp_listener, tcp_request_timeout);
     info!("awaiting DNS connections...");
 
     server
