@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro)]
+#![feature(proc_macro_hygiene, decl_macro, try_trait)]
 
 #[macro_use]
 extern crate rocket;
@@ -10,6 +10,7 @@ use tokio::task;
 mod cli;
 mod dns;
 mod http;
+//mod errors;
 
 #[tokio::main]
 async fn main() {
