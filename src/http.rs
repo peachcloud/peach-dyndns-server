@@ -43,10 +43,12 @@ impl From<NoneError> for ServerError {
 impl<'a, 'b: 'a> Responder<'a, 'static> for ServerError {
     fn respond_to(self, _: &rocket::Request) -> Result<rocket::Response<'static>, Status> {
         match self {
-            TestError => {
+            ServerError::SecretMismatch => Err(Status::Forbidden),
+            ServerError::TestError => {
                 Err(Status::InternalServerError)
             },
-            SecretMismatch=> Err(Status::Forbidden)
+            _ => Err(Status::InternalServerError)
+
         }
     }
 }
@@ -103,10 +105,10 @@ fn update_domain(db: State<Database>, data: Json<DomainRecord>) -> EndpointResul
                 db.domains
                     .insert(data.domain.as_bytes(), data.clone())
                     .unwrap();
+                Ok(Json(data.0))
             // if the secret doesn't match, then return an error
             } else {
                 info!("++ secrets mismatch");
-                // TODO: this isn't properly throwing an error
                 return SecretMismatch { domain: format!("{:?}", data.domain) }.fail();
             }
         },
@@ -115,9 +117,9 @@ fn update_domain(db: State<Database>, data: Json<DomainRecord>) -> EndpointResul
             db.domains
                 .insert(data.domain.as_bytes(), data.clone())
                 .unwrap();
+            Ok(Json(data.0))
           }
         }
-    Ok(Json(data.0))
 }
 
 
