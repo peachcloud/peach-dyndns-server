@@ -81,6 +81,18 @@ pub async fn server() -> ServerFuture<Catalog> {
         Box::new(Arc::new(RwLock::new(authority))),
     );
 
+    // second insert
+    let dyn_name = Name::from_str("test.dyn.peach.cloud.").unwrap();
+    let dyn_ttl = 60;
+    let dyn_rdata = RData::A(Ipv4Addr::new(1, 1, 1, 3));
+    let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
+    authority.upsert(dyn_record, authority.serial());
+
+    catalog.upsert(
+        LowerName::new(&authority_name),
+        Box::new(Arc::new(RwLock::new(authority))),
+    );
+
     let mut server = ServerFuture::new(catalog);
 
     // load all the listeners
