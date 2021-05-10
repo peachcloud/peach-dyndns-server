@@ -56,12 +56,13 @@ impl DnsManager {
         authority_records
     }
 
-    fn upsert_domain(mut authority: InMemoryAuthority, domain: String, ip: Ipv4Addr) {
+    fn upsert_domain(mut authority: InMemoryAuthority, domain: String, ip: Ipv4Addr) -> InMemoryAuthority {
         let dyn_name = Name::from_str(&domain).unwrap();
         let dyn_ttl = 60;
         let dyn_rdata = RData::A(ip);
         let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
         authority.upsert(dyn_record, authority.serial());
+        authority
     }
 
     fn build_catalog(&mut self) {
@@ -72,7 +73,7 @@ impl DnsManager {
         let authority_allow_axfr = false;
 
         // first create an authority for root_dyn_zone
-        let authority = InMemoryAuthority::new(
+        let mut authority = InMemoryAuthority::new(
             authority_name.clone(),
             authority_records,
             authority_zone_type,
@@ -83,7 +84,11 @@ impl DnsManager {
         // then upsert records into the authority for all records in database
         let domain1 = format!("test.{}", self.dyn_root_zone);
         let ip1 = Ipv4Addr::new(1, 1, 1, 1);
-        DnsManager::upsert_domain(authority, domain1, ip1);
+        authority = DnsManager::upsert_domain(authority, domain1, ip1);
+
+        let domain2 = format!("peach.{}", self.dyn_root_zone);
+        let ip2 = Ipv4Addr::new(1, 1, 1, 3);
+        authority = DnsManager::upsert_domain(authority, domain2, ip2);
 
         // finally put the authority into the catalog
         self.catalog.upsert(
