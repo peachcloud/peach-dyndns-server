@@ -19,7 +19,7 @@ use trust_dns_client::rr::{DNSClass, Name, RData, Record, RecordType};
 #[tokio::main]
 async fn main() {
 
-    let address = "dyn.local:12323".parse().unwrap();
+    let address = "127.0.0.1:12323".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
 
