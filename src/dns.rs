@@ -31,62 +31,6 @@ impl DnsManager {
             dyn_root_zone,
         };
     }
-//
-//    pub fn upsert(&mut self, domain: String, ip: Ipv4Addr) {
-//
-//
-//        let authority_name = Name::from_str(&self.dyn_root_zone).unwrap();
-//
-//        let soa_serial = 1;
-//        let soa_name = Name::from_str(&self.dyn_root_zone).unwrap();
-//        let soa_rdata = RData::SOA(SOA::new(
-//            Name::from_str(&self.dyn_root_zone).unwrap(),      // mname
-//            Name::from_str(&format!("root.{}", &self.dyn_root_zone)).unwrap(), // rname
-//            soa_serial,                                       // serial
-//            604800,                                           // refresh
-//            86400,                                            // retry
-//            2419200,                                          // expire
-//            86400,                                            // negtive cache ttl
-//        ));
-//        let mut soa_record_set = RecordSet::new(&soa_name, RecordType::SOA, soa_serial);
-//        soa_record_set.add_rdata(soa_rdata);
-//        let soa_rr_key = RrKey::new(
-//            LowerName::new(&authority_name),
-//            soa_record_set.record_type(),
-//        );
-//        let mut authority_records = BTreeMap::new();
-//        authority_records.insert(soa_rr_key, soa_record_set);
-//
-//        let authority_zone_type = ZoneType::Master;
-//        let authority_allow_axfr = false;
-//
-//        let mut authority = InMemoryAuthority::new(
-//            authority_name.clone(),
-//            authority_records,
-//            authority_zone_type,
-//            authority_allow_axfr,
-//        )
-//            .unwrap();
-//
-//            /*
-//        let ns_name = Name::from_str("dyn.peachcloud.org.").unwrap();
-//        let ns_ttl = 60;
-//        let ns_rdata = RData::NS(Name::from_str("localhost.").unwrap());
-//        let ns_record = Record::from_rdata(ns_name, ns_ttl, ns_rdata);
-//        authority.upsert(ns_record, authority.serial());
-//        */
-//
-//        let dyn_name = Name::from_str(&domain).unwrap();
-//        let dyn_ttl = 60;
-//        let dyn_rdata = RData::A(ip);
-//        let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
-//        authority.upsert(dyn_record, authority.serial());
-//
-//        self.catalog.upsert(
-//            LowerName::new(&authority_name),
-//            Box::new(Arc::new(RwLock::new(authority))),
-//        );
-//    }
 
     fn get_initial_records(domain: &str) ->  BTreeMap<RrKey, RecordSet> {
         let authority_name = Name::from_str(domain).unwrap();
@@ -112,42 +56,22 @@ impl DnsManager {
         authority_records
     }
 
-    pub fn upsert(&mut self, domain: &str, ip: Ipv4Addr) {
-
-        let authority_records = DnsManager::get_initial_records(domain);
-        let authority_name = Name::from_str(domain).unwrap();
-
-        let authority_zone_type = ZoneType::Master;
-        let authority_allow_axfr = false;
-
-        let mut authority = InMemoryAuthority::new(
-            authority_name.clone(),
-            authority_records,
-            authority_zone_type,
-            authority_allow_axfr,
-        )
-            .unwrap();
-
-        let dyn_name = Name::from_str(domain).unwrap();
+    fn upsert_domain(mut authority: InMemoryAuthority, domain: String, ip: Ipv4Addr) {
+        let dyn_name = Name::from_str(&domain).unwrap();
         let dyn_ttl = 60;
         let dyn_rdata = RData::A(ip);
         let dyn_record = Record::from_rdata(dyn_name, dyn_ttl, dyn_rdata);
         authority.upsert(dyn_record, authority.serial());
-
-        self.catalog.upsert(
-            LowerName::new(&authority_name),
-            Box::new(Arc::new(RwLock::new(authority))),
-        );
     }
 
-    fn root_upsert(&mut self) {
+    fn build_catalog(&mut self) {
         let authority_records = DnsManager::get_initial_records(&self.dyn_root_zone);
         let authority_name = Name::from_str(&self.dyn_root_zone).unwrap();
 
         let authority_zone_type = ZoneType::Master;
         let authority_allow_axfr = false;
 
-        // first upsert, for root
+        // first create an authority for root_dyn_zone
         let authority = InMemoryAuthority::new(
             authority_name.clone(),
             authority_records,
@@ -155,6 +79,13 @@ impl DnsManager {
             authority_allow_axfr,
         )
             .unwrap();
+
+        // then upsert records into the authority for all records in database
+        let domain1 = format!("test.{}", self.dyn_root_zone);
+        let ip1 = Ipv4Addr::new(1, 1, 1, 1);
+        DnsManager::upsert_domain(authority, domain1, ip1);
+
+        // finally put the authority into the catalog
         self.catalog.upsert(
             LowerName::new(&authority_name),
             Box::new(Arc::new(RwLock::new(authority))),
@@ -165,22 +96,19 @@ impl DnsManager {
     fn upsert_test(&mut self) {
 
         // first insert the authority for the root dyn zone
-        self.root_upsert();
+        self.build_catalog();
 
         // second upsert, for sub-sub
-        let domain1 = &format!("test.{}", self.dyn_root_zone);
-        let ip1 = Ipv4Addr::new(1, 1, 1, 1);
-        self.upsert(domain1, ip1);
 
         // third upsert, for sub-sub
-        let domain2 = &format!("peach.{}", self.dyn_root_zone);
-        let ip2 = Ipv4Addr::new(1, 1, 1, 2);
-        self.upsert(domain2, ip2);
-
-        // update upsert, for sub-sub
-        let domain2 = &format!("test.{}", self.dyn_root_zone);
-        let ip2 = Ipv4Addr::new(1, 1, 1, 3);
-        self.upsert(domain2, ip2);
+//        let domain2 = &format!("peach.{}", self.dyn_root_zone);
+//        let ip2 = Ipv4Addr::new(1, 1, 1, 2);
+//        self.upsert(domain2, ip2);
+//
+//        // update upsert, for sub-sub
+//        let domain2 = &format!("test.{}", self.dyn_root_zone);
+//        let ip2 = Ipv4Addr::new(1, 1, 1, 3);
+//        self.upsert(domain2, ip2);
 
     }
 }
@@ -234,10 +162,6 @@ pub async fn server() -> ServerFuture<Catalog> {
     info!("DNS server listening for TCP on {:?}", tcp_listener);
     server.register_listener(tcp_listener, tcp_request_timeout);
     info!("awaiting DNS connections...");
-
-    let domain3 = &format!("question.{}", dns_manager.dyn_root_zone);
-    let ip3 = Ipv4Addr::new(1, 1, 1, 5);
-    dns_manager.upsert(domain3, ip3);
 
     server
 }
