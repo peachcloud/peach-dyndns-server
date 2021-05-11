@@ -13,11 +13,14 @@ use std::str::FromStr;
 use trust_dns_client::client::{Client, SyncClient};
 use trust_dns_client::udp::UdpClientConnection;
 use trust_dns_client::op::DnsResponse;
-use trust_dns_client::rr::{DNSClass, Name, RData, Record, RecordType};
+use trust_dns_client::op::update_message;
+use trust_dns_client::rr::{DNSClass, Name, RData, Record, RecordType, RecordSet};
+use trust_dns_server::authority::{
+    AuthLookup, Authority, LookupError, MessageRequest, UpdateResult,
+};
 
 
-fn main() {
-
+fn simple_test() {
     let address = "127.0.0.1:12323".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
@@ -39,4 +42,25 @@ fn main() {
     //  In order to access it we need to first check what type of record it is
     //  In this case we are interested in A, IPv4 address
     println!("found: {:?}", answers[0].rdata())
+}
+
+
+fn main() {
+
+    let address = "127.0.0.1:12323".parse().unwrap();
+    let conn = UdpClientConnection::new(address).unwrap();
+    let client = SyncClient::new(conn);
+
+
+    // Specify the name, note the final '.' which specifies it's an FQDN
+    let name = Name::from_str("up.dyn.commoninternet.net").unwrap();
+
+    let record = Record::from_rdata(name.clone(), 8, RData::A(Ipv4Addr::new(127, 0, 0, 10)));
+    let rrset: RecordSet = record.clone().into();
+    let zone_origin = Name::from_str("dyn.commoninternet.net").unwrap();
+
+    let response: DnsResponse = client.create(rrset, zone_origin).unwrap();
+    println!("response: {:?}", response);
+
+    // this also produces a response code of 4 (not yet implemented)
 }
