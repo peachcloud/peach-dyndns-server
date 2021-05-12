@@ -12,6 +12,7 @@ use std::net::Ipv4Addr;
 use std::str::FromStr;
 use trust_dns_client::client::{Client, SyncClient};
 use trust_dns_client::udp::UdpClientConnection;
+use trust_dns_client::tcp::TcpClientConnection;
 use trust_dns_client::op::DnsResponse;
 use trust_dns_client::op::update_message;
 use trust_dns_client::rr::{DNSClass, Name, RData, Record, RecordType, RecordSet};
@@ -21,16 +22,21 @@ use trust_dns_server::authority::{
 
 
 fn simple_test() {
-    let address = "127.0.0.1:12323".parse().unwrap();
+//    let address = "127.0.0.1:12323".parse().unwrap();
+    let address = "167.99.136.83:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
+//    let conn = TcpClientConnection::new(address).unwrap();
+//    let client = SyncClient::new(conn);
 
        // Specify the name, note the final '.' which specifies it's an FQDN
-    let name = Name::from_str("peach.dyn.commoninternet.net").unwrap();
+    let name = Name::from_str("time.commoninternet.net.").unwrap();
 
     // NOTE: see 'Setup a connection' example above
     // Send the query and get a message response, see RecordType for all supported options
+    println!("++ making query");
     let response: DnsResponse = client.query(&name, DNSClass::IN, RecordType::A).unwrap();
+    println!("++ received response");
 
     // Messages are the packets sent between client and server in DNS, DnsResonse's can be
     //  dereferenced to a Message. There are many fields to a Message, It's beyond the scope
@@ -44,23 +50,26 @@ fn simple_test() {
     println!("found: {:?}", answers[0].rdata())
 }
 
-
-fn main() {
-
-    let address = "127.0.0.1:12323".parse().unwrap();
+fn update_test() {
+    let address = "167.99.136.83:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
 
 
     // Specify the name, note the final '.' which specifies it's an FQDN
-    let name = Name::from_str("up.dyn.commoninternet.net").unwrap();
+    let name = Name::from_str("test.time.commoninternet.net").unwrap();
 
     let record = Record::from_rdata(name.clone(), 8, RData::A(Ipv4Addr::new(127, 0, 0, 10)));
     let rrset: RecordSet = record.clone().into();
-    let zone_origin = Name::from_str("dyn.commoninternet.net").unwrap();
+    let zone_origin = Name::from_str("time.commoninternet.net").unwrap();
 
-    let response: DnsResponse = client.create(rrset, zone_origin).unwrap();
+    let response: DnsResponse = client.create(rrset, zone_origin).expect("failed to create record");
     println!("response: {:?}", response);
+}
 
-    // this also produces a response code of 4 (not yet implemented)
+
+fn main() {
+
+//    simple_test();
+    update_test();
 }
