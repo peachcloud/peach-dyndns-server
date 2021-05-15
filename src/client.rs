@@ -1,8 +1,3 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
-#[macro_use]
-extern crate rocket;
-
 use futures::try_join;
 use std::io;
 use tokio::task;
@@ -21,33 +16,23 @@ use trust_dns_server::authority::{
 };
 
 
-fn simple_test() {
-//    let address = "127.0.0.1:12323".parse().unwrap();
+pub fn check_domain_available(domain: &str) -> bool {
     let address = "167.99.136.83:53".parse().unwrap();
     let conn = UdpClientConnection::new(address).unwrap();
     let client = SyncClient::new(conn);
-//    let conn = TcpClientConnection::new(address).unwrap();
-//    let client = SyncClient::new(conn);
+    let name = Name::from_str(domain).unwrap();
 
-       // Specify the name, note the final '.' which specifies it's an FQDN
-    let name = Name::from_str("time.commoninternet.net.").unwrap();
-
-    // NOTE: see 'Setup a connection' example above
-    // Send the query and get a message response, see RecordType for all supported options
-    println!("++ making query");
+    info!("++ making query {:?}", domain);
     let response: DnsResponse = client.query(&name, DNSClass::IN, RecordType::A).unwrap();
-    println!("++ received response");
-
-    // Messages are the packets sent between client and server in DNS, DnsResonse's can be
-    //  dereferenced to a Message. There are many fields to a Message, It's beyond the scope
-    //  of these examples to explain them. See trust_dns::op::message::Message for more details.
-    //  generally we will be interested in the Message::answers
+    info!("++ received response");
     let answers: &[Record] = response.answers();
 
-    // Records are generic objects which can contain any data.
-    //  In order to access it we need to first check what type of record it is
-    //  In this case we are interested in A, IPv4 address
-    println!("found: {:?}", answers[0].rdata())
+    if answers.len() > 0 {
+        info!("found: {:?}", answers[0].rdata());
+        true
+    } else {
+        false
+    }
 }
 
 fn update_test() {
@@ -70,6 +55,6 @@ fn update_test() {
 
 fn main() {
 
-//    simple_test();
-    update_test();
+    check_domain_available("test");
+//    update_test();
 }

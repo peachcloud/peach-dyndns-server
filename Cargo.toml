@@ -28,5 +28,5 @@ name = "client"
 path = "src/client.rs"
 
 [[bin]]
-name = "dns"
+name = "main"
 path = "src/main.rs"

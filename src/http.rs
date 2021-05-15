@@ -8,43 +8,32 @@
 */
 use rocket_contrib::json::Json;
 use serde::Deserialize;
+use std::thread;
+use crate::client::check_domain_available;
 
 #[get("/")]
-fn index() -> &'static str {
+pub fn index() -> &'static str {
     "This is the peach-dyn-dns server."
 }
 
 #[derive(Deserialize, Debug)]
-struct RegisterDomainPost {
+pub struct RegisterDomainPost {
     domain: String,
 }
 
 #[post("/register-domain", data = "<data>")]
-fn register_domain(data: Json<RegisterDomainPost>) -> &'static str {
+pub async fn register_domain(data: Json<RegisterDomainPost>) -> &'static str {
     info!("++ post request to register new domain: {:?}", data);
-    "New domain registered" // TODO: return secret
-}
-
-#[derive(Deserialize, Debug)]
-struct UpdateDomainPost {
-    domain: String,
-    secret: String,
-}
-
-#[post("/update-domain", data = "<data>")]
-fn update_domain(data: Json<UpdateDomainPost>) -> &'static str {
-    info!("++ post request to update domain: {:?}", data);
-    "Updating domain" // TODO: validate, then do it
-}
-
-pub async fn server() {
-
-    let rocket_result= rocket::build()
-        .mount("/", routes![index, register_domain, update_domain])
-        .launch()
-        .await;
-
-    if let Err(err) = rocket_result {
-        error!("++ error launching rocket server: {:?}", err);
+    // TODO: first confirm domain is in the right format ("*.dyn.peachcloud.org")
+    let handle = thread::spawn(move || {
+        let domain_already_exists = check_domain_available(&data.domain);
+        domain_already_exists
+    });
+    let domain_already_exists = handle.join().unwrap();
+    if domain_already_exists {
+        "can't register domain already exists"
+    } else {
+        // TODO: use bash to generate a tsig key, update bind config, and then return the secret
+        "New domain registered"
     }
 }
