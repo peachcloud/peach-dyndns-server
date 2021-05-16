@@ -28,5 +28,9 @@ name = "client"
 path = "src/client.rs"
 
 [[bin]]
+name = "zone"
+path = "src/utils.rs"
+
+[[bin]]
 name = "main"
 path = "src/main.rs"

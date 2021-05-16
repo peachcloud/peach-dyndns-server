@@ -1,5 +1,6 @@
 
 
+
 Add the following to /etc/bind/named.conf.local:
 ```
 key "ddns-key.dyn.commoninternet.net" {
@@ -15,7 +16,6 @@ file "/var/lib/bind/dyn.commoninternet.net";
         };
 };
 ```
-
 
 Add the following to /var/lib/bind/dyn.commoninternet.net:
 ```
