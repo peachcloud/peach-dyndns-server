@@ -1,6 +1,7 @@
 # peach-dyndns-host
 
-a DNS server to host the names of guests with changing IP addresses
+a dynamic DNS server to host the names of guests with changing IP addresses. provides an http API 
+for updating bind9 configurations. 
 
 _work in progress_
 
@@ -15,7 +16,7 @@ cargo run -- -vvv # DEBUG log verbosity
 in another terminal
 
 ```shell
-dig @localhost -p 12323 test.dyn.peach.cloud
+nslookup blue.dyn.peachcloud.org ns.peachcloud.org 
 ```
 
 or
@@ -23,3 +24,8 @@ or
 ```shell
 curl http://localhost:3000
 ```
+
+
+## testing
+
+contains bash scripts for testing and debugging dynamic dns server behavior using nslookup

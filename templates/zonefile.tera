@@ -1,0 +1,10 @@
+$ORIGIN .
+$TTL 30	; 30 seconds
+{{full_domain}} IN SOA ns.commoninternet.net. root.commoninternet.net. (
+				2016062804 ; serial
+				3600       ; refresh (1 hour)
+				600        ; retry (10 minutes)
+				2600       ; expire (43 minutes 20 seconds)
+				30         ; minimum (30 seconds)
+				)
+			NS	ns.commoninternet.net.

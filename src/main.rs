@@ -3,19 +3,19 @@
 #[macro_use]
 extern crate rocket;
 
+use crate::http::{index, register_domain};
 use futures::try_join;
 use std::io;
 use tokio::task;
-use crate::http::{index, register_domain};
 
 mod cli;
-mod http;
 mod client;
+mod http;
+mod generate_zone;
 
 #[tokio::main]
 async fn main() {
-
-     let rocket_result= rocket::build()
+    let rocket_result = rocket::build()
         .mount("/", routes![index, register_domain])
         .launch()
         .await;
@@ -23,5 +23,4 @@ async fn main() {
     if let Err(err) = rocket_result {
         error!("++ error launching rocket server: {:?}", err);
     }
-
 }
