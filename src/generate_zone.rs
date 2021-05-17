@@ -75,20 +75,18 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 /// subdomain using dynamic DNS authenticated via a new TSIG key which is unique to that subdomain
 /// and thus only the possessor of that key can use nsupdate to modify the records
 /// for that subodmain
-pub fn generate_zone(subdomain: &str) -> Result<String, PeachDynError> {
+pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
 
-    // construct full_domain
-    let full_domain = format!("{}.{}", subdomain, BASE_DOMAIN);
-    println!("[generating zone for {}]", full_domain);
+    // TODO: confirm that domain matches correct format
 
     // first safety check if the domain is available
-    let is_available = check_domain_available(&full_domain);
+    let is_available = check_domain_available(full_domain);
     if !is_available {
-        return Err(PeachDynError::DomainAlreadyExistsError(full_domain));
+        return Err(PeachDynError::DomainAlreadyExistsError(full_domain.to_string()));
     }
 
     // generate string with text for TSIG key file
-    let key_file_text = generate_tsig_key(&full_domain).expect("failed to generate tsig key");
+    let key_file_text = generate_tsig_key(full_domain).expect("failed to generate tsig key");
 
     // append key_file_text to /etc/bind/dyn.commoninternet.net.keys
     let key_file_path = "/etc/bind/dyn.commoninternet.net.keys";
@@ -129,7 +127,7 @@ pub fn generate_zone(subdomain: &str) -> Result<String, PeachDynError> {
         }
     };
     let mut context = Context::new();
-    context.insert("full_domain", &full_domain);
+    context.insert("full_domain", full_domain);
     let result = tera.render("zonefile.tera", &context).expect("error loading zonefile.tera");
 
     // write new zone file to /var/lib/bind
