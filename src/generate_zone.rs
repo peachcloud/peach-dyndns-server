@@ -1,8 +1,6 @@
-/* For each subdomain,
-- generate a new ddns key (tsig-keygen -a hmac-md5 {{subdomain}}.dyn.commoninternet.net) and append it to /etc/bind/dyn.commoninternet.net.keys
-- add a zone section to /etc/bind/named.conf.local, associating the key with the subdomain
-- add a minimal zone file to /var/lib/bind/subdomain.dyn.commoninternet.net
-- reload bind and return the secret key to the client
+/*
+* Functions for generating bind9 configurations to enable dynamic dns for a subdomain via TSIG authentication
+* which is unique to that subdomain
 */
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -10,7 +8,7 @@ use std::io::Write;
 use std::process::Command;
 use tera::{Tera, Context};
 use crate::errors::PeachDynError;
-use crate::constants::BASE_DOMAIN;
+use crate::constants::DOMAIN_REGEX;
 
 
 /// function to generate the text of a TSIG key file
@@ -22,6 +20,13 @@ pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynError> {
         .output()?;
     let key_file_text = String::from_utf8(output.stdout)?;
     Ok(key_file_text)
+}
+
+// function returns true if domain is of the format something.dyn.peachcloud.org
+pub fn validate_domain(domain: &str) -> bool {
+    use regex::Regex;
+    let re = Regex::new(DOMAIN_REGEX).unwrap();
+    re.is_match(domain)
 }
 
 /// function which helps us guarantee that a given domain is not already being used by bind
@@ -54,13 +59,20 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 
 /// function which generates all necessary bind configuration to serve the given
 /// subdomain using dynamic DNS authenticated via a new TSIG key which is unique to that subdomain
-/// - thus only the possessor of that key can use nsupdate to modify the records
+/// thus only the possessor of that key can use nsupdate to modify the records
 /// for that subodmain
+/// - generate a new ddns key (tsig-keygen -a hmac-md5 {{subdomain}}.dyn.commoninternet.net) and append it to /etc/bind/dyn.commoninternet.net.keys
+/// - add a zone section to /etc/bind/named.conf.local, associating the key with the subdomain
+/// - add a minimal zone file to /var/lib/bind/subdomain.dyn.commoninternet.net
+/// - reload bind and return the secret key to the client
 pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
 
-    // TODO: confirm that domain matches correct format
+    // first safety check domain is in correct format
+    if !validate_domain(full_domain) {
+        return Err(PeachDynError::InvalidDomainError(full_domain.to_string()));
+    }
 
-    // first safety check if the domain is available
+    // safety check if the domain is available
     let is_available = check_domain_available(full_domain);
     if !is_available {
         return Err(PeachDynError::DomainAlreadyExistsError(full_domain.to_string()));
@@ -74,7 +86,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
     let mut file = OpenOptions::new().append(true).open(key_file_path)
         .expect(&format!("failed to open {}", key_file_path));
     if let Err(e) = writeln!(file, "{}", key_file_text) {
-        eprintln!("Couldn't write to file: {}", e);
+        error!("Couldn't write to file: {}", e);
     }
 
     // append zone section to /etc/bind/named.conf.local
@@ -95,15 +107,13 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
     ",
         full_domain = full_domain
     );
-    if let Err(e) = writeln!(file, "{}", zone_section_text) {
-        eprintln!("Couldn't write to file: {}", e);
-    }
+    writeln!(file, "{}", zone_section_text).expect(&format!("Couldn't write to file: {}", bind_conf_path));
 
     // use tera to render the zone file
     let tera = match Tera::new("templates/*.tera") {
         Ok(t) => t,
         Err(e) => {
-            println!("Parsing error(s): {}", e);
+            info!("Parsing error(s): {}", e);
             ::std::process::exit(1);
         }
     };
@@ -115,9 +125,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
     let zone_file_path = format!("/var/lib/bind/{}", full_domain);
     let mut file = File::create(&zone_file_path)
         .expect(&format!("failed to create {}", zone_file_path));
-    if let Err(e) = writeln!(file, "{}", result) {
-        eprintln!("Couldn't write to file: {}", e)
-    };
+    writeln!(file, "{}", result).expect(&format!("Couldn't write to file: {}", zone_file_path));
 
     // restart bind
     // we use the /etc/sudoers.d/bindctl to allow peach-dyndns user to restart bind as sudo without entering a password

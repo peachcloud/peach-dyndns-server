@@ -7,6 +7,7 @@ pub enum PeachDynError {
     GenerateTsigParseError(std::string::FromUtf8Error),
     DomainAlreadyExistsError(String),
     BindConfigurationError(String),
+    InvalidDomainError(String)
 }
 
 impl From<std::io::Error> for PeachDynError {

@@ -5,7 +5,7 @@
 * /user/register sends an email verification to create a new account) NOT IMPLEMENTED
 * /user/verify (for clicking the link in the email) NOT IMPLEMENTED
 */
-use crate::generate_zone::{check_domain_available, generate_zone};
+use crate::generate_zone::{check_domain_available, generate_zone, validate_domain};
 use rocket_contrib::json::{Json, JsonValue};
 use serde::{Deserialize, Serialize};
 
@@ -41,24 +41,32 @@ pub struct RegisterDomainPost {
 pub async fn register_domain(data: Json<RegisterDomainPost>) -> Json<JsonResponse> {
     info!("++ post request to register new domain: {:?}", data);
     // TODO: grab/create a mutex, so that only one rocket thread is calling register_domain at a time
-    // TODO: first confirm domain is in the right format ("*.dyn.peachcloud.org")
-    let is_domain_available = check_domain_available(&data.domain);
-    if !is_domain_available{
+    // check if its a valid domain
+    if !validate_domain(&data.domain) {
         let status = "error".to_string();
-        let msg = "can't register a domain that is already registered".to_string();
+        let msg = "domain is not in a valid format".to_string();
         Json(build_json_response(status, None, Some(msg)))
     } else {
-        let result = generate_zone(&data.domain);
-        match result {
-            Ok(key_file_text) => {
-                let status = "success".to_string();
-                let msg = key_file_text.to_string();
-                Json(build_json_response(status, None, Some(msg)))
-            }
-            Err(_err) => {
-                let status = "error".to_string();
-                let msg = "there was an error creating the zone file".to_string();
-                Json(build_json_response(status, None, Some(msg)))
+        // check if the domain is available
+        let is_domain_available = check_domain_available(&data.domain);
+        if !is_domain_available {
+            let status = "error".to_string();
+            let msg = "can't register a domain that is already registered".to_string();
+            Json(build_json_response(status, None, Some(msg)))
+        } else {
+            // generate configs for the zone
+            let result = generate_zone(&data.domain);
+            match result {
+                Ok(key_file_text) => {
+                    let status = "success".to_string();
+                    let msg = key_file_text.to_string();
+                    Json(build_json_response(status, None, Some(msg)))
+                }
+                Err(_err) => {
+                    let status = "error".to_string();
+                    let msg = "there was an error creating the zone file".to_string();
+                    Json(build_json_response(status, None, Some(msg)))
+                }
             }
         }
     }
@@ -73,9 +81,14 @@ pub struct CheckAvailableDomainPost {
 #[post("/domain/check-available", data = "<data>")]
 pub async fn check_available(data: Json<CheckAvailableDomainPost>) -> Json<JsonResponse> {
     info!("post request to check if domain is available {:?}", data);
-    // TODO: validate that domain is in correct format
-    let status = "success".to_string();
-    let is_available = check_domain_available(&data.domain);
-    let msg = is_available.to_string();
-    Json(build_json_response(status, None, Some(msg)))
+     if !validate_domain(&data.domain) {
+        let status = "error".to_string();
+        let msg = "domain is not in a valid format".to_string();
+        Json(build_json_response(status, None, Some(msg)))
+    } else {
+         let status = "success".to_string();
+         let is_available = check_domain_available(&data.domain);
+         let msg = is_available.to_string();
+         Json(build_json_response(status, None, Some(msg)))
+     }
 }

@@ -1308,6 +1308,7 @@ dependencies = [
  "futures 0.3.14",
  "log",
  "nest",
+ "regex",
  "rocket",
  "rocket_contrib",
  "serde 1.0.125",

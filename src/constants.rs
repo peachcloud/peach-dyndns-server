@@ -1,5 +1,4 @@
 
-
-// this is the base domain which peach-dyndns creates subdomains under
+// this regex is used to validate that domains are in the correct format
 // e.g. blue.dyn.peachcloud.org
-pub const BASE_DOMAIN: &str = "dyn.commoninternet.net";
+pub const DOMAIN_REGEX: &str = r"^.*\.dyn\.commointernet\.net$";

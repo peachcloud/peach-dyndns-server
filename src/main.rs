@@ -4,8 +4,6 @@
 extern crate rocket;
 
 use crate::routes::{index, register_domain, check_available};
-use std::io;
-use tokio::task;
 
 mod cli;
 mod routes;
@@ -15,6 +13,8 @@ mod generate_zone;
 
 #[tokio::main]
 async fn main() {
+    let _args = cli::args().expect("error parsing args");
+
     let rocket_result = rocket::build()
         .mount("/", routes![index, register_domain, check_available])
         .launch()

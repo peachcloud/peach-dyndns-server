@@ -22,6 +22,7 @@ rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "ma
 serde = "1.0.125"
 dotenv = "0.15.0"
 tera = "1"
+regex = "1"
 
 [[bin]]
 name = "main"
