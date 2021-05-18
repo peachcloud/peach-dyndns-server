@@ -1,8 +1,9 @@
 /*
-*
-* /register-user (sends an email verification to create a new account) NOT IMPLEMENTED
-* /verify (for clicking the link in the email) NOT IMPLEMENTED
-* /register-domain (add a new domain and get back the TSIG key for subsequent updating with nsupdate)
+* LIST OF ROUTES
+* /domain/register (add a new domain and get back the TSIG key for subsequent updating with nsupdate)
+* /domain/check-available (check if given domain is available)
+* /user/register sends an email verification to create a new account) NOT IMPLEMENTED
+* /user/verify (for clicking the link in the email) NOT IMPLEMENTED
 */
 use crate::generate_zone::{check_domain_available, generate_zone};
 use rocket_contrib::json::{Json, JsonValue};
@@ -36,9 +37,10 @@ pub struct RegisterDomainPost {
     domain: String,
 }
 
-#[post("/register-domain", data = "<data>")]
+#[post("/domain/register", data = "<data>")]
 pub async fn register_domain(data: Json<RegisterDomainPost>) -> Json<JsonResponse> {
     info!("++ post request to register new domain: {:?}", data);
+    // TODO: grab/create a mutex, so that only one rocket thread is calling register_domain at a time
     // TODO: first confirm domain is in the right format ("*.dyn.peachcloud.org")
     let is_domain_available = check_domain_available(&data.domain);
     if !is_domain_available{
@@ -60,4 +62,20 @@ pub async fn register_domain(data: Json<RegisterDomainPost>) -> Json<JsonRespons
             }
         }
     }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CheckAvailableDomainPost {
+    domain: String,
+}
+
+// route which returns a msg of "true" if the domain is available and "false" if it is already taken
+#[post("/domain/check-available", data = "<data>")]
+pub async fn check_available(data: Json<CheckAvailableDomainPost>) -> Json<JsonResponse> {
+    info!("post request to check if domain is available {:?}", data);
+    // TODO: validate that domain is in correct format
+    let status = "success".to_string();
+    let is_available = check_domain_available(&data.domain);
+    let msg = is_available.to_string();
+    Json(build_json_response(status, None, Some(msg)))
 }
