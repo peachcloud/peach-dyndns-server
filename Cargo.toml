@@ -23,15 +23,6 @@ serde = "1.0.125"
 dotenv = "0.15.0"
 tera = "1"
 
-
-[[bin]]
-name = "client"
-path = "src/client.rs"
-
-[[bin]]
-name = "zone"
-path = "src/generate_zone.rs"
-
 [[bin]]
 name = "main"
 path = "src/main.rs"

@@ -3,14 +3,15 @@
 #[macro_use]
 extern crate rocket;
 
-use crate::http::{index, register_domain};
+use crate::routes::{index, register_domain};
 use futures::try_join;
 use std::io;
 use tokio::task;
 
 mod cli;
-mod client;
-mod http;
+mod routes;
+mod errors;
+mod constants;
 mod generate_zone;
 
 #[tokio::main]

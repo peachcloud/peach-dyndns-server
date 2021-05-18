@@ -8,33 +8,12 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::process::Command;
-use std::string::FromUtf8Error;
 use tera::{Tera, Context};
+use crate::errors::PeachDynError;
+use crate::constants::BASE_DOMAIN;
 
 
-const BASE_DOMAIN: &str = "dyn.commoninternet.net";
-
-#[derive(Debug)]
-pub enum PeachDynError {
-    GenerateTsigIoError(std::io::Error),
-    GenerateTsigParseError(std::string::FromUtf8Error),
-    DomainAlreadyExistsError(String),
-    BindConfigurationError(String),
-}
-
-impl From<std::io::Error> for PeachDynError {
-    fn from(err: std::io::Error) -> PeachDynError {
-        PeachDynError::GenerateTsigIoError(err)
-    }
-}
-
-impl From<FromUtf8Error> for PeachDynError {
-    fn from(err: std::string::FromUtf8Error) -> PeachDynError {
-        PeachDynError::GenerateTsigParseError(err)
-    }
-}
-
-/// helper function to generate the text of a TSIG key file
+/// function to generate the text of a TSIG key file
 pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynError> {
     let output = Command::new("/usr/sbin/tsig-keygen")
         .arg("-a")
@@ -45,7 +24,8 @@ pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynError> {
     Ok(key_file_text)
 }
 
-/// helper function which returns true if all three conditions are true
+/// function which helps us guarantee that a given domain is not already being used by bind
+/// it checks three places for the domain, and only returns true if it is not found in all three places
 /// - no already extant tsig key for the given domain
 /// - no zone file for the given domain in /var/lib/bind
 /// - no zone section for the given domain in named.conf.local
@@ -64,6 +44,7 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 
     // domain is only available if domain does not exist in either named.conf.local or dyn.commoninternet.netkeys
     // and a file with that name is not found in /var/lib/bind/
+    // grep returns a status code of 1 if lines are not found, which is why we check that the codes equal 1
     let domain_available = (code1 == 1) & (code2 == 1) & (!condition3);
 
     // return
@@ -71,9 +52,9 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 
 }
 
-/// helper function which generates all necessary bind configuration to serve the given
+/// function which generates all necessary bind configuration to serve the given
 /// subdomain using dynamic DNS authenticated via a new TSIG key which is unique to that subdomain
-/// and thus only the possessor of that key can use nsupdate to modify the records
+/// - thus only the possessor of that key can use nsupdate to modify the records
 /// for that subodmain
 pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
 
@@ -151,19 +132,4 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
 
     // return success
     Ok(key_file_text)
-}
-
-// this main function is only used for the purpose of testing
-fn main() {
-
-    let result = generate_zone("purple");
-    match result {
-        Ok(key_text) => {
-            println!("successfully created zone");
-            println!("{}", key_text);
-        }
-        Err(err) => {
-            println!("error creating zone {:?}", err);
-        }
-    }
 }
