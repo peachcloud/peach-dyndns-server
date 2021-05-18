@@ -1,2 +1,4 @@
 /target
 **/*.rs.bk
+ns_tests/*.key
+ns_tests/*

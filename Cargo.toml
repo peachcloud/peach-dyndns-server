@@ -20,3 +20,10 @@ trust-dns-client = "0.20.2"
 rocket = { git = "https://github.com/SergioBenitez/Rocket", branch = "master" }
 rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", branch = "master" }
 serde = "1.0.125"
+dotenv = "0.15.0"
+tera = "1"
+regex = "1"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
