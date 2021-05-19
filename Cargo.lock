@@ -1299,7 +1299,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "peach-dyndns-host"
+name = "peach-dyndns-server"
 version = "0.1.0"
 dependencies = [
  "clap-log-flag",

@@ -1,0 +1,13 @@
+[Unit]
+Description=An http API to create dynamic-dns configurations for bind9.
+
+[Service]
+Type=simple
+User=peach-dyndns
+Group=bind
+Environment="RUST_LOG=info"
+ExecStart=/usr/bin/peach-dyndns-server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
