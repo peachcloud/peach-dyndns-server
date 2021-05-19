@@ -2,3 +2,5 @@
 **/*.rs.bk
 ns_tests/*.key
 ns_tests/*
+.DS_Store
+bash

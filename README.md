@@ -1,31 +1,33 @@
 # peach-dyndns-host
 
-a dynamic DNS server to host the names of guests with changing IP addresses. provides an http API 
-for updating bind9 configurations. 
+a dynamic DNS server to host the names of guests with changing IP addresses
+by providing an http API for updating bind9 configurations. 
 
-_work in progress_
 
-## demo
+## setup 
 
-```shell
-git clone git@github.com:peachcloud/peach-dyndns-host
-cd peach-dyndns-host
-cargo run -- -vvv # DEBUG log verbosity
+The code in this repo assumes the existence of an installed and running bind9 server on the same 
+server as is running peach-dyndns-server. Documentation for setting up bind9 can be found [here](docs/setup-bind-for-peach-dyndns.md).
+
+The peach-dyndns-server code can be compiled with
+```
+cargo build --release
 ```
 
-in another terminal
+## run
 
-```shell
-nslookup blue.dyn.peachcloud.org ns.peachcloud.org 
+```
+sudo su peach-dyndns; ./target/release/main -vv
 ```
 
-or
+## test
 
-```shell
-curl http://localhost:3000
+test peach-dyndns server is running,
+```
+curl http://localhost:8000
 ```
 
-
-## testing
-
-contains bash scripts for testing and debugging dynamic dns server behavior using nslookup
+test peach-bind9 is running,
+```
+nslookup blue.dyn.peachcloud.org ns.peachcloud.org
+```
