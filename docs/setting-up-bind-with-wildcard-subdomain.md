@@ -1,4 +1,5 @@
-
+This file contains notes which may be relevant for setting up bind, 
+and are not directly necessary for running the code in this repository.
 
 
 Add the following to /etc/bind/named.conf.local:
