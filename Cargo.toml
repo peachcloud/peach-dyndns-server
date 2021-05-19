@@ -32,5 +32,7 @@ maintainer-scripts="debian"
 systemd-units = { unit-name = "peach-dyndns-server" }
 assets = [
     ["target/release/peach-dyndns-server", "usr/bin/", "755"],
+    ["debian/reloadbind", "usr/bin/", "755"],
+    ["debian/bindctl", "/etc/sudoers.d/bindctl", "655"],
+    ["templates/*", "/srv/peachcloud/peach-dyndns-server/prod-peach-dyndns/templates/", "644"],
 ]
-

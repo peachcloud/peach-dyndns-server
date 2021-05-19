@@ -1,0 +1,12 @@
+#
+# Allow peach-dyndns to reload bind as sudo
+#
+
+# User alias for bind-ctl which can reload bind
+User_Alias  BIND_CTRL = peach-dyndns
+
+# Command alias for reboot and shutdown
+Cmnd_Alias  RELOADBIND = /usr/bin/reloadbind
+
+# Allow BIND_CTRL users to execute RELOADBIND command without password
+BIND_CTRL  ALL=(ALL) NOPASSWD: RELOADBIND

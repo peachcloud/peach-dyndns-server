@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+# create user which peach-dyndns-server runs as
+adduser --quiet --system peach-dyndns
+
+# add user to bind group
+usermod -a -G bind peach-dyndns
+
+# set permissions
+chown peach-dyndns /usr/bin/peach-dyndns-server
+chown peach-dyndns /usr/bin/reloadbind
+
+# cargo deb automatically replaces this token below, see https://github.com/mmstick/cargo-deb/blob/master/systemd.md
+#DEBHELPER#
