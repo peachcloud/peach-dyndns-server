@@ -131,7 +131,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
     // we use the /etc/sudoers.d/bindctl to allow peach-dyndns user to restart bind as sudo without entering a password
     // using a binary at /bin/reloadbind which runs 'systemctl reload bind9'
     let status = Command::new("sudo")
-        .arg("/bin/reloadbind")
+        .arg("/usr/bin/reloadbind")
         .status().expect("error restarting bind9");
     if !status.success() {
         return Err(PeachDynError::BindConfigurationError("There was an error in the bind configuration".to_string()));

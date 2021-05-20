@@ -1,5 +1,5 @@
 [package]
-name = "peach-dyndns-host"
+name = "peach-dyndns-server"
 version = "0.1.0"
 authors = ["Michael Williams <michael.williams@enspiral.com>", "Max Fowler <notplants@mfowler.info>"]
 edition = "2018"
@@ -24,6 +24,15 @@ dotenv = "0.15.0"
 tera = "1"
 regex = "1"
 
-[[bin]]
-name = "main"
-path = "src/main.rs"
+[package.metadata.deb]
+depends = "$auto"
+extended-description = """\
+peach-dyndns is an http API to create dynamic-dns configurations for bind9."""
+maintainer-scripts="debian"
+systemd-units = { unit-name = "peach-dyndns-server" }
+assets = [
+    ["target/release/peach-dyndns-server", "usr/bin/", "755"],
+    ["debian/reloadbind", "usr/bin/", "755"],
+    ["debian/bindctl", "/etc/sudoers.d/bindctl", "655"],
+    ["templates/*", "/srv/peachcloud/peach-dyndns-server/prod-peach-dyndns/templates/", "644"],
+]
