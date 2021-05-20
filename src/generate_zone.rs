@@ -42,12 +42,12 @@ pub fn check_domain_available(full_domain: &str) -> bool {
     let code1 = status1.code().expect("error getting code from grep");
     let status2 = Command::new("/bin/grep")
         .arg(full_domain)
-        .arg("/etc/bind/dyn.commoninternet.net.keys")
-        .status().expect("error running grep on /etc/bind/dyn.commoninternet.net.keys");
+        .arg("/etc/bind/dyn.peachcloud.org.keys")
+        .status().expect("error running grep on /etc/bind/dyn.peachcloud.org.keys");
     let code2 = status2.code().expect("error getting code from grep");
     let condition3 = std::path::Path::new(&format!("/var/lib/bind/{}", full_domain)).exists();
 
-    // domain is only available if domain does not exist in either named.conf.local or dyn.commoninternet.netkeys
+    // domain is only available if domain does not exist in either named.conf.local or dyn.peachcloud.orgkeys
     // and a file with that name is not found in /var/lib/bind/
     // grep returns a status code of 1 if lines are not found, which is why we check that the codes equal 1
     let domain_available = (code1 == 1) & (code2 == 1) & (!condition3);
@@ -61,9 +61,9 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 /// subdomain using dynamic DNS authenticated via a new TSIG key which is unique to that subdomain
 /// thus only the possessor of that key can use nsupdate to modify the records
 /// for that subodmain
-/// - generate a new ddns key (tsig-keygen -a hmac-md5 {{subdomain}}.dyn.commoninternet.net) and append it to /etc/bind/dyn.commoninternet.net.keys
+/// - generate a new ddns key (tsig-keygen -a hmac-md5 {{subdomain}}.dyn.peachcloud.org) and append it to /etc/bind/dyn.peachcloud.org.keys
 /// - add a zone section to /etc/bind/named.conf.local, associating the key with the subdomain
-/// - add a minimal zone file to /var/lib/bind/subdomain.dyn.commoninternet.net
+/// - add a minimal zone file to /var/lib/bind/subdomain.dyn.peachcloud.org
 /// - reload bind and return the secret key to the client
 pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
 
@@ -81,8 +81,8 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
     // generate string with text for TSIG key file
     let key_file_text = generate_tsig_key(full_domain).expect("failed to generate tsig key");
 
-    // append key_file_text to /etc/bind/dyn.commoninternet.net.keys
-    let key_file_path = "/etc/bind/dyn.commoninternet.net.keys";
+    // append key_file_text to /etc/bind/dyn.peachcloud.org.keys
+    let key_file_path = "/etc/bind/dyn.peachcloud.org.keys";
     let mut file = OpenOptions::new().append(true).open(key_file_path)
         .expect(&format!("failed to open {}", key_file_path));
     if let Err(e) = writeln!(file, "{}", key_file_text) {
