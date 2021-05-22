@@ -7,18 +7,20 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::process::Command;
 use tera::{Tera, Context};
-use crate::errors::PeachDynError;
+use snafu::{ResultExt};
+use log::{info, error};
+use crate::errors::*;
 use crate::constants::DOMAIN_REGEX;
 
 
 /// function to generate the text of a TSIG key file
-pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynError> {
+pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynDnsError> {
     let output = Command::new("/usr/sbin/tsig-keygen")
         .arg("-a")
         .arg("hmac-md5")
         .arg(full_domain)
-        .output()?;
-    let key_file_text = String::from_utf8(output.stdout)?;
+        .output().context(KeyGenerationError)?;
+    let key_file_text = String::from_utf8(output.stdout).context(KeyFileParseError)?;
     Ok(key_file_text)
 }
 
@@ -65,17 +67,17 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 /// - add a zone section to /etc/bind/named.conf.local, associating the key with the subdomain
 /// - add a minimal zone file to /var/lib/bind/subdomain.dyn.peachcloud.org
 /// - reload bind and return the secret key to the client
-pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
+pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
 
     // first safety check domain is in correct format
     if !validate_domain(full_domain) {
-        return Err(PeachDynError::InvalidDomainError(full_domain.to_string()));
+        return Err(PeachDynDnsError::InvalidDomain{ domain: full_domain.to_string() });
     }
 
     // safety check if the domain is available
     let is_available = check_domain_available(full_domain);
     if !is_available {
-        return Err(PeachDynError::DomainAlreadyExistsError(full_domain.to_string()));
+        return Err(PeachDynDnsError::DomainAlreadyExistsError { domain: full_domain.to_string() });
     }
 
     // generate string with text for TSIG key file
@@ -134,7 +136,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynError> {
         .arg("/usr/bin/reloadbind")
         .status().expect("error restarting bind9");
     if !status.success() {
-        return Err(PeachDynError::BindConfigurationError("There was an error in the bind configuration".to_string()));
+          return Err(PeachDynDnsError::BindConfigurationError);
         // TODO: for extra safety consider to revert bind configurations to whatever they were before
     }
 
