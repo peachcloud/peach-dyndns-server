@@ -37,7 +37,8 @@ pub fn run() -> Result<(), BoxError> {
         let d: Result<RegisterDomainPost, Error> = params.parse();
         match d {
             Ok(d) => match generate_zone(&d.domain) {
-                Ok(_) => Ok(Value::String("success".to_string())),
+                // returns full TSIG key text to new zone as part of success result
+                Ok(key_text) => Ok(Value::String(key_text)),
                 Err(e) => Err(Error::from(e)),
             },
             Err(e) => Err(Error::from(PeachDynDnsError::MissingParams { e })),
