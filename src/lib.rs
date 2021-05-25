@@ -61,7 +61,7 @@ pub fn run() -> Result<(), BoxError> {
                 // if it has a valid format, check if its available
                 else {
                     let result = check_domain_available(&d.domain);
-                    Ok(Value::Bool(result))
+                    Ok(Value::String(result.to_string()))
                 }
             },
             Err(e) => Err(Error::from(PeachDynDnsError::MissingParams { e })),
