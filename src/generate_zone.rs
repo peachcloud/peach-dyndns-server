@@ -2,16 +2,15 @@
 * Functions for generating bind9 configurations to enable dynamic dns for a subdomain via TSIG authentication
 * which is unique to that subdomain
 */
+use crate::constants::DOMAIN_REGEX;
+use crate::errors::*;
+use log::{error, info};
+use snafu::ResultExt;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::process::Command;
-use tera::{Tera, Context};
-use snafu::{ResultExt};
-use log::{info, error};
-use crate::errors::*;
-use crate::constants::DOMAIN_REGEX;
-
+use tera::{Context, Tera};
 
 /// function to generate the text of a TSIG key file
 pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynDnsError> {
@@ -19,7 +18,8 @@ pub fn generate_tsig_key(full_domain: &str) -> Result<String, PeachDynDnsError> 
         .arg("-a")
         .arg("hmac-md5")
         .arg(full_domain)
-        .output().context(KeyGenerationError)?;
+        .output()
+        .context(KeyGenerationError)?;
     let key_file_text = String::from_utf8(output.stdout).context(KeyFileParseError)?;
     Ok(key_file_text)
 }
@@ -40,12 +40,14 @@ pub fn check_domain_available(full_domain: &str) -> bool {
     let status1 = Command::new("/bin/grep")
         .arg(full_domain)
         .arg("/etc/bind/named.conf.local")
-        .status().expect("error running grep on /etc/bind/named.conf.local");
+        .status()
+        .expect("error running grep on /etc/bind/named.conf.local");
     let code1 = status1.code().expect("error getting code from grep");
     let status2 = Command::new("/bin/grep")
         .arg(full_domain)
         .arg("/etc/bind/dyn.peachcloud.org.keys")
-        .status().expect("error running grep on /etc/bind/dyn.peachcloud.org.keys");
+        .status()
+        .expect("error running grep on /etc/bind/dyn.peachcloud.org.keys");
     let code2 = status2.code().expect("error getting code from grep");
     let condition3 = std::path::Path::new(&format!("/var/lib/bind/{}", full_domain)).exists();
 
@@ -64,16 +66,19 @@ pub fn check_domain_available(full_domain: &str) -> bool {
 /// - add a minimal zone file to /var/lib/bind/subdomain.dyn.peachcloud.org
 /// - reload bind and return the secret key to the client
 pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
-
     // first safety check domain is in correct format
     if !validate_domain(full_domain) {
-        return Err(PeachDynDnsError::InvalidDomain{ domain: full_domain.to_string() });
+        return Err(PeachDynDnsError::InvalidDomain {
+            domain: full_domain.to_string(),
+        });
     }
 
     // safety check if the domain is available
     let is_available = check_domain_available(full_domain);
     if !is_available {
-        return Err(PeachDynDnsError::DomainAlreadyExistsError { domain: full_domain.to_string() });
+        return Err(PeachDynDnsError::DomainAlreadyExistsError {
+            domain: full_domain.to_string(),
+        });
     }
 
     // generate string with text for TSIG key file
@@ -81,7 +86,9 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
 
     // append key_file_text to /etc/bind/dyn.peachcloud.org.keys
     let key_file_path = "/etc/bind/dyn.peachcloud.org.keys";
-    let mut file = OpenOptions::new().append(true).open(key_file_path)
+    let mut file = OpenOptions::new()
+        .append(true)
+        .open(key_file_path)
         .unwrap_or_else(|_| panic!("failed to open {}", key_file_path));
     if let Err(e) = writeln!(file, "{}", key_file_text) {
         error!("Couldn't write to file: {}", e);
@@ -105,7 +112,8 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     ",
         full_domain = full_domain
     );
-    writeln!(file, "{}", zone_section_text).unwrap_or_else(|_| panic!("Couldn't write to file: {}", bind_conf_path));
+    writeln!(file, "{}", zone_section_text)
+        .unwrap_or_else(|_| panic!("Couldn't write to file: {}", bind_conf_path));
 
     // use tera to render the zone file
     let tera = match Tera::new("templates/*.tera") {
@@ -117,22 +125,26 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     };
     let mut context = Context::new();
     context.insert("full_domain", full_domain);
-    let result = tera.render("zonefile.tera", &context).expect("error loading zonefile.tera");
+    let result = tera
+        .render("zonefile.tera", &context)
+        .expect("error loading zonefile.tera");
 
     // write new zone file to /var/lib/bind
     let zone_file_path = format!("/var/lib/bind/{}", full_domain);
     let mut file = File::create(&zone_file_path)
         .unwrap_or_else(|_| panic!("failed to create {}", zone_file_path));
-    writeln!(file, "{}", result).unwrap_or_else(|_| panic!("Couldn't write to file: {}", zone_file_path));
+    writeln!(file, "{}", result)
+        .unwrap_or_else(|_| panic!("Couldn't write to file: {}", zone_file_path));
 
     // restart bind
     // we use the /etc/sudoers.d/bindctl to allow peach-dyndns user to restart bind as sudo without entering a password
     // using a binary at /bin/reloadbind which runs 'systemctl reload bind9'
     let status = Command::new("sudo")
         .arg("/usr/bin/reloadbind")
-        .status().expect("error restarting bind9");
+        .status()
+        .expect("error restarting bind9");
     if !status.success() {
-          return Err(PeachDynDnsError::BindConfigurationError);
+        return Err(PeachDynDnsError::BindConfigurationError);
         // TODO: for extra safety consider to revert bind configurations to whatever they were before
     }
 

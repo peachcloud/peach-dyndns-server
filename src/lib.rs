@@ -5,19 +5,18 @@
 * NOT IMPLEMENTED- register_user (sends an email verification to create a new account)
 * NOT IMPLEMENTED- verify_user (for clicking the link in the email)
 */
+mod constants;
 mod errors;
 mod generate_zone;
-mod constants;
 use crate::generate_zone::{check_domain_available, generate_zone, validate_domain};
-use std::result::Result;
 use jsonrpc_core::{types::error::Error, IoHandler, Params, Value};
 use jsonrpc_http_server::{AccessControlAllowOrigin, DomainsValidation, ServerBuilder};
 use log::info;
 use std::env;
-
+use std::result::Result;
 
 use crate::errors::{BoxError, PeachDynDnsError};
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct RegisterDomainPost {
@@ -56,14 +55,16 @@ pub fn run() -> Result<(), BoxError> {
             Ok(d) => {
                 // if the domain has an invalid format return an erro
                 if !validate_domain(&d.domain) {
-                    Err(Error::from(PeachDynDnsError::InvalidDomain{ domain: d.domain }))
+                    Err(Error::from(PeachDynDnsError::InvalidDomain {
+                        domain: d.domain,
+                    }))
                 }
                 // if it has a valid format, check if its available
                 else {
                     let result = check_domain_available(&d.domain);
                     Ok(Value::String(result.to_string()))
                 }
-            },
+            }
             Err(e) => Err(Error::from(PeachDynDnsError::MissingParams { e })),
         }
     });
