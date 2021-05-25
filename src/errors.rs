@@ -42,7 +42,7 @@ impl From<PeachDynDnsError> for Error {
             },
             PeachDynDnsError::BindConfigurationError => Error {
                 code: ErrorCode::ServerError(-32029),
-                message: format!("There was a bind configuration error"),
+                message: "There was a bind configuration error".to_string(),
                 data: None,
             },
             PeachDynDnsError::DomainAlreadyExistsError { domain} => Error {
@@ -52,36 +52,14 @@ impl From<PeachDynDnsError> for Error {
             },
             PeachDynDnsError::KeyFileParseError { source: _} => Error {
                 code: ErrorCode::ServerError(-32031),
-                message: format!("Error parsing key file"),
+                message: "Error parsing key file".to_string(),
                 data: None,
             },
             PeachDynDnsError::KeyGenerationError { source: _} => Error {
                 code: ErrorCode::ServerError(-32032),
-                message: format!("Key generation error"),
+                message: "Key generation error".to_string(),
                 data: None,
             },
         }
     }
 }
-
-//#[derive(Debug)]
-//pub enum PeachDynError {
-//    GenerateTsigIoError(std::io::Error),
-//    GenerateTsigParseError(std::string::FromUtf8Error),
-//    DomainAlreadyExistsError(String),
-//    BindConfigurationError(String),
-//    InvalidDomainError(String)
-//    NetworkError::MissingParams { e } => e.clone(),
-//}
-//
-//impl From<std::io::Error> for PeachDynError {
-//    fn from(err: std::io::Error) -> PeachDynError {
-//        PeachDynError::GenerateTsigIoError(err)
-//    }
-//}
-//
-//impl From<FromUtf8Error> for PeachDynError {
-//    fn from(err: std::string::FromUtf8Error) -> PeachDynError {
-//        PeachDynError::GenerateTsigParseError(err)
-//    }
-//}

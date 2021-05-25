@@ -56,7 +56,7 @@ pub fn run() -> Result<(), BoxError> {
             Ok(d) => {
                 // if the domain has an invalid format return an erro
                 if !validate_domain(&d.domain) {
-                    Err(Error::from(PeachDynDnsError::InvalidDomain{ domain: d.domain.to_string() }))
+                    Err(Error::from(PeachDynDnsError::InvalidDomain{ domain: d.domain }))
                 }
                 // if it has a valid format, check if its available
                 else {

@@ -52,11 +52,7 @@ pub fn check_domain_available(full_domain: &str) -> bool {
     // domain is only available if domain does not exist in either named.conf.local or dyn.peachcloud.orgkeys
     // and a file with that name is not found in /var/lib/bind/
     // grep returns a status code of 1 if lines are not found, which is why we check that the codes equal 1
-    let domain_available = (code1 == 1) & (code2 == 1) & (!condition3);
-
-    // return
-    domain_available
-
+    (code1 == 1) & (code2 == 1) & (!condition3)
 }
 
 /// function which generates all necessary bind configuration to serve the given
@@ -86,7 +82,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     // append key_file_text to /etc/bind/dyn.peachcloud.org.keys
     let key_file_path = "/etc/bind/dyn.peachcloud.org.keys";
     let mut file = OpenOptions::new().append(true).open(key_file_path)
-        .expect(&format!("failed to open {}", key_file_path));
+        .unwrap_or_else(|_| panic!("failed to open {}", key_file_path));
     if let Err(e) = writeln!(file, "{}", key_file_text) {
         error!("Couldn't write to file: {}", e);
     }
@@ -96,7 +92,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     let mut file = OpenOptions::new()
         .append(true)
         .open(bind_conf_path)
-        .expect(&format!("failed to open {}", bind_conf_path));
+        .unwrap_or_else(|_| panic!("failed to open {}", bind_conf_path));
     let zone_section_text = format!(
         "\
         zone \"{full_domain}\" {{
@@ -109,7 +105,7 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     ",
         full_domain = full_domain
     );
-    writeln!(file, "{}", zone_section_text).expect(&format!("Couldn't write to file: {}", bind_conf_path));
+    writeln!(file, "{}", zone_section_text).unwrap_or_else(|_| panic!("Couldn't write to file: {}", bind_conf_path));
 
     // use tera to render the zone file
     let tera = match Tera::new("templates/*.tera") {
@@ -126,8 +122,8 @@ pub fn generate_zone(full_domain: &str) -> Result<String, PeachDynDnsError> {
     // write new zone file to /var/lib/bind
     let zone_file_path = format!("/var/lib/bind/{}", full_domain);
     let mut file = File::create(&zone_file_path)
-        .expect(&format!("failed to create {}", zone_file_path));
-    writeln!(file, "{}", result).expect(&format!("Couldn't write to file: {}", zone_file_path));
+        .unwrap_or_else(|_| panic!("failed to create {}", zone_file_path));
+    writeln!(file, "{}", result).unwrap_or_else(|_| panic!("Couldn't write to file: {}", zone_file_path));
 
     // restart bind
     // we use the /etc/sudoers.d/bindctl to allow peach-dyndns user to restart bind as sudo without entering a password
