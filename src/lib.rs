@@ -2,8 +2,8 @@
 * LIST OF METHODS
 * register_domain (add a new domain and get back the TSIG key for subsequent updating with nsupdate)
 * is_domain_available (check if given domain is available and return boolean result)
-* register_user (sends an email verification to create a new account) NOT IMPLEMENTED
-* verify_user (for clicking the link in the email) NOT IMPLEMENTED
+* NOT IMPLEMENTED: register_user (sends an email verification to create a new account)
+* NOT IMPLEMENTED: verify_user (for clicking the link in the email)
 */
 mod errors;
 mod generate_zone;
