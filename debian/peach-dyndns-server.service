@@ -6,9 +6,9 @@ Type=simple
 User=peach-dyndns
 Group=bind
 Environment="RUST_LOG=info"
-Environment="ROCKET_PORT=3002"
+Environment="PEACH_DYNDNS_SERVER=127.0.0.1:3002"
 WorkingDirectory=/srv/peachcloud/peach-dyndns-server/prod-peach-dyndns
-ExecStart=/usr/bin/peach-dyndns-server -vv
+ExecStart=/usr/bin/peach-dyndns-server
 Restart=always
 
 [Install]
