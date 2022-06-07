@@ -1,3 +1,7 @@
+⚠️ This repo is no longer active and has been archived. The active repo can be found at https://git.coopcloud.tech/PeachCloud/peach-dyndns-server ⚠️
+
+-----
+
 # peach-dyndns-host
 
 a dynamic DNS server to host the names of guests with changing IP addresses
